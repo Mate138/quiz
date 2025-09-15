@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="main-section">
+    <h1>Quiz App</h1>
+    <button id="btn-student">Student</button>
+    <button id="btn-teacher">Teacher</button>
+  </div>
+
+  <div id="student-section" class="hidden">
+    <h2>Student Quiz</h2>
+    <div id="timer">40:00</div>
+    <form id="quiz-form">
+      <div id="questions-container"></div>
+      <button type="button" id="btn-submit-quiz">Submit Quiz</button>
+      <button type="button" class="btn-back-main">Back</button>
+    </form>
+  </div>
+
+  <div id="teacher-section" class="hidden">
+    <h2>Teacher Panel</h2>
+    <div id="teacher-results"></div>
+    <button class="btn-back-main">Back</button>
+  </div>
+
+  <div id="submit-section" class="hidden">
+    <h2>Quiz Results</h2>
+    <p id="results-text"></p>
+    <div id="wrong-answers-list"></div>
+    <button class="btn-back-main">Back to Main</button>
+  </div>
+
+  <audio id="doorbell-sound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+
+  <script>
+    const questions = [
+      { id: "q1", question: "What is the capital of Japan?", 
+      choices: ["Tokyo", "Beijing", "Seoul"],
+       answer: "Tokyo" },
+      { id: "q2", question: "Which planet is known as the Red Planet?", 
+      choices: ["Venus", "Mars", "Jupiter"],
+       answer: "Mars" },
+      { id: "q3", question: "What is 8 × 7?", choices: ["54", "56", "58"],
+       answer: "56" },
+      { id: "q4", question: "Who wrote 'Romeo and Juliet'?", 
+      choices: ["William Shakespeare", "Ernest Hemingway", "Leo Tolstoy"], 
+      answer: "William Shakespeare" },
+      { id: "q5", question: "What gas do plants absorb from the atmosphere?",
+       choices: ["Oxygen", "Carbon Dioxide", "Nitrogen"],
+        answer: "Carbon Dioxide" },
+      { id: "q6", question: "What part of the plant conducts photosynthesis?", 
+      choices: ["Root", "Stem", "Leaf"], 
+      answer: "Leaf" },
+      { id: "q7", question: "What is the boiling point of water at sea level?", 
+      choices: ["100°C", "90°C", "80°C"],
+       answer: "100°C" },
+      { id: "q8", question: "Which planet is known as the Red Planet?",
+       choices: ["Venus", "Mars", "Jupiter"],
+        answer: "Mars" },
+      { id: "q9", question: "What force pulls objects toward Earth?",
+       choices: ["Friction", "Magnetism", "Gravity"],
+        answer: "Gravity" },
+      { id: "q10", question: "Which organ in the human body pumps blood?",
+       choices: ["Lungs", "Heart", "Liver"], 
+       answer: "Heart" },
+      { id: "q11", question: "What gas do humans exhale?", 
+      choices: ["Oxygen", "Hydrogen", "Carbon Dioxide"], 
+      answer: "Carbon Dioxide" },
+      { id: "q12", question: "Which state of matter has a definite volume but no definite shape?", 
+      choices: ["Solid", "Liquid", "Gas"],
+       answer: "Liquid" },
+      { id: "q13", question: "How many legs does an insect have?", 
+      choices: ["Six", "Eight", "Ten"], 
+      answer: "Six" },
+      { id: "q14", question: "What is the main source of energy for Earth?",
+       choices: ["The Moon", "Electricity", "The Sun"],
+        answer: "The Sun" },
+      { id: "q15", question: "What tool is used to measure temperature?", 
+      choices: ["Thermometer", "Barometer", "Hygrometer"], 
+      answer: "Thermometer" }
+    ];
+
+    function showSection(sectionId) {
+      const sections = ["main-section", "student-section", "teacher-section", "submit-section"];
+      sections.forEach(id => {
+        document.getElementById(id).classList.toggle("hidden", id !== sectionId);
+      });
+    }
+
+    function loadStudentQuiz() {
+      const container = document.getElementById("questions-container");
+      container.innerHTML = "";
+
+      questions.forEach(q => {
+        const questionDiv = document.createElement("div");
+        questionDiv.classList.add("question");
+
+        const questionText = document.createElement("h3");
+        questionText.textContent = q.question;
+        questionDiv.appendChild(questionText);
+
+        q.choices.forEach(choice => {
+          const label = document.createElement("label");
+          label.style.display = "block";
+
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = q.id;
+          input.value = choice;
+
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(choice));
+
+          questionDiv.appendChild(label);
+        });
+
+        container.appendChild(questionDiv);
+      });
+    }
+
+    function loadTeacherPanel() {
+      const container = document.getElementById("teacher-results");
+      container.innerHTML = "";
+
+      questions.forEach(q => {
+        const qDiv = document.createElement("div");
+
+        const qText = document.createElement("h3");
+        qText.textContent = q.question;
+        qDiv.appendChild(qText);
+
+        const answerP = document.createElement("p");
+        answerP.innerHTML = `<strong>Answer:</strong> ${q.answer}`;
+        qDiv.appendChild(answerP);
+
+        container.appendChild(qDiv);
+      });
+    }
+
+    function handleSubmitQuiz(forceSubmit = false) {
+      let score = 0;
+      let answeredCount = 0;
+      const wrongAnswers = [];
+
+      for (const q of questions) {
+        const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (selected) {
+          answeredCount++;
+          if (selected.value === q.answer) {
+            score++;
+          } else {
+            wrongAnswers.push({
+              question: q.question,
+              yourAnswer: selected.value,
+              correctAnswer: q.answer
+            });
+          }
+        } else if (!forceSubmit) {
+          alert("Please answer all questions before submitting!");
+          return;
+        } else {
+          wrongAnswers.push({
+            question: q.question,
+            yourAnswer: "No answer",
+            correctAnswer: q.answer
+          });
+        }
+      }
+
+      // Show score
+      document.getElementById("results-text").textContent =
+        `You scored ${score} out of ${questions.length}`;
+
+      // Show wrong answers
+      const wrongList = document.getElementById("wrong-answers-list");
+      wrongList.innerHTML = "";
+
+      if (wrongAnswers.length > 0) {
+        wrongAnswers.forEach(w => {
+          const div = document.createElement("div");
+          div.className = "wrong-answer";
+          div.innerHTML = `
+            <h4>${w.question}</h4>
+            <p><strong>Your answer:</strong> ${w.yourAnswer}</p>
+            <p><strong>Correct answer:</strong> ${w.correctAnswer}</p>
+          `;
+          wrongList.appendChild(div);
+        });
+      } else {
+        const perfect = document.createElement("div");
+        perfect.className = "correct-answer";
+        perfect.innerHTML = "<p>🎉 Great job! You got all questions right!</p>";
+        wrongList.appendChild(perfect);
+      }
+
+      showSection("submit-section");
+      stopTimer();
+    }
+
+    let timeLeft = 10 * 60; // 40 minutes
+    let timerInterval = null;
+
+    function updateTimer() {
+      const timerEl = document.getElementById('timer');
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+
+      timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+      if (timeLeft > 0) {
+        timeLeft--;
+      } else {
+        clearInterval(timerInterval);
+        alert('Time is up!');
+        document.getElementById('doorbell-sound').play();
+        handleSubmitQuiz(true);
+      }
+    }
+
+    function startTimer() {
+      stopTimer();
+      timeLeft = 10 * 60;
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function setup() {
+      document.getElementById("btn-student").addEventListener("click", () => {
+        loadStudentQuiz();
+        showSection("student-section");
+        startTimer();
+      });
+
+      document.getElementById("btn-teacher").addEventListener("click", () => {
+        loadTeacherPanel();
+        showSection("teacher-section");
+        stopTimer();
+      });
+
+      document.getElementById("btn-submit-quiz").addEventListener("click", () => handleSubmitQuiz(false));
+
+      document.querySelectorAll(".btn-back-main").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          showSection("main-section");
+          stopTimer();
+        });
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", setup);
+  </script>
+
+</body>
+</html>
